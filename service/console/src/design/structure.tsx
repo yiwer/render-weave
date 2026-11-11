@@ -5,7 +5,7 @@
  */
 import { useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react';
 import type { DropZone } from '../template/structure.js';
-import { canDropInto, currentAdd, isAddDrag } from './add-panel.js';
+import { canDropInto, currentAdd, isAddDrag } from './insert-bar.js';
 import { CHEVRON_RIGHT, EYE_OFF, Icon } from '../components/icon.js';
 import { ELEMENT_TYPES } from '../template/properties.js';
 import { ancestorKeys, buildTree, type TreeNode } from '../template/tree.js';

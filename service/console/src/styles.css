@@ -602,9 +602,22 @@ fieldset.field.plain > legend { padding: 0; margin-bottom: 6px; }
 .design-dock { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 12; display: flex; align-items: center; gap: 4px; padding: 3px; max-width: calc(100% - 20px); border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: var(--shadow); white-space: nowrap; }
 .dock-group { display: inline-flex; align-items: center; gap: 2px; }
 .dock-sep { width: 1px; height: 18px; margin: 0 3px; background: var(--hair); flex: none; }
-.design-dock button { min-height: 26px; height: 26px; min-width: 28px; padding: 0 6px; border: 0; border-radius: 6px; background: none; color: var(--muted); font-size: 12px; }
-.design-dock button:hover:not(:disabled) { background: var(--hover); color: var(--ink); }
-.design-dock button[aria-pressed="true"] { background: var(--accent-soft); color: var(--ink); }
+.dock-group > button { min-height: 26px; height: 26px; min-width: 28px; padding: 0 6px; border: 0; border-radius: 6px; background: none; color: var(--muted); font-size: 12px; }
+.dock-group > button:hover:not(:disabled), .dock-group > button[aria-expanded="true"] { background: var(--hover); color: var(--ink); }
+.dock-group > button[aria-pressed="true"] { background: var(--accent-soft); color: var(--ink); }
+.dock-pop { position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%); display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); white-space: normal; }
+.dock-pop.dragging { opacity: 0; pointer-events: none; }
+.dock-pop > p { margin: 0 2px; max-width: 264px; }
+.dock-shapes { display: grid; grid-template-columns: repeat(4, 64px); gap: 4px; }
+.dock-shapes > button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 56px; padding: 6px 2px; border: 0; border-radius: var(--r); background: none; font-size: 11px; font-weight: 400; color: var(--ink); cursor: grab; }
+.dock-shapes > button:hover { background: var(--hover); }
+.dock-shapes svg { width: 18px; height: 18px; color: var(--slate); }
+.dock-form { width: 280px; gap: 8px; padding: 12px; }
+.dock-form > strong { font-size: 13px; }
+/* 小目录或表单弹开时盖在空画板的提示上，提示先让开。 */
+.design-body:has(.dock-pop) .stage-hint { visibility: hidden; }
+/* 工具栏加了插入一组后宽 620：窗口窄到它伸进两侧面板下面时，面板让出底下这一条。 */
+@media (max-width: 1300px) { .design-panel { bottom: 54px; } }
 .dock-zoom { min-width: 48px !important; font-variant-numeric: tabular-nums; }
 .design-tray { flex: none; background: var(--bg); border-top: 1px solid var(--line); min-width: 0; }
 .design-tray-head { display: flex; align-items: center; gap: 12px; min-height: 36px; padding: 0 10px 0 14px; white-space: nowrap; min-width: 0; }
@@ -848,10 +861,6 @@ button.add-prop:hover:not(:disabled) { border-color: var(--faint); background: v
 .add-panel > p { margin: 0; }
 .add-section { display: flex; flex-direction: column; gap: 6px; }
 .add-section > h3 { margin: 0; font-size: 12px; font-weight: 600; color: var(--muted); }
-.add-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
-.add-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; width: 100%; min-height: 54px; padding: 6px 4px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); font-size: 12px; font-weight: 400; color: var(--ink); cursor: grab; }
-.add-item:hover:not(:disabled), .add-item[aria-expanded="true"] { border-color: var(--field); background: var(--hover); }
-.add-item svg { width: 18px; height: 18px; color: var(--slate); }
 .add-form { display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: var(--r); background: var(--sunken); }
 .add-form p { margin: 0; }
 .add-field { display: flex; flex-direction: column; gap: 2px; color: var(--muted); }

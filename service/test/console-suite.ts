@@ -19,6 +19,8 @@ import type { ServiceBackend } from '../src/backend.js';
 import { createWorld, type World } from './api-suite.js';
 import { unzip } from './records-suite.js';
 import { checkDslDocument } from '../src/engine.js';
+import { insertElement, insertionPoint, newElement, type Bindings, type NewKind } from '../console/src/template/create.js';
+import { parseTemplateText, templateText } from '../console/src/template/document.js';
 import { RESOURCES_DIR, seedAllElements, seedConsoleBadge, seedM402, seedPriceTag, seedStress } from './seed.js';
 import { xlsxOf } from './xlsx-fixture.js';
 
@@ -3156,7 +3158,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await leaveDesign(target, ROOT);
     }, 180_000);
 
-    it('模板设计（票据 14）：从元素目录点一下加到选中的容器；把字段拖到图上生成绑定好的文字；列表字段选基准相符的模板变循环；拖经结构页签放到树上', async () => {
+    it('模板设计（票据 14）：从底部工具栏点一下加到选中的容器；把字段拖到图上生成绑定好的文字；列表字段选基准相符的模板变循环；拖经结构页签放到树上', async () => {
       const ROOT = '标准线路单边', token = world.b.admin.token;
       const target = await asAdmin();
       await leaveDesign(target, ROOT);
@@ -3176,18 +3178,19 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
       const row = (name: string) => side.locator(`[data-testid="structure-row"][data-path="${ROOT}/${name}"]`);
 
-      // 选中顶栏，到"添加"页：写明加到哪。点矩形，加在顶栏的最后，堆叠里只写尺寸。
+      // 选中顶栏，点开底部工具栏的"形状"（第三轮票据 06 起元素目录在这里）：写明加到哪。点矩形，加在顶栏的最后，堆叠里只写尺寸。
       await row('顶栏').getByRole('button').first().click();
-      await side.getByRole('tab', { name: '添加' }).click();
-      await side.getByTestId('add-target').filter({ hasText: '「顶栏」的最后' }).waitFor();
+      await target.getByTestId('insert-shape').click();
+      await target.getByTestId('insert-target').filter({ hasText: '「顶栏」的最后' }).waitFor();
       let saved = stashed();
-      await side.locator('[data-testid="add-element"][data-kind="rect"]').click();
+      await target.locator('[data-testid="add-element"][data-kind="rect"]').click();
       await saved;
       const top = await childrenOf('顶栏');
       expect(top.at(-1)).toMatchObject({ name: '矩形', type: 'rect', place: { width: { fixed: 20 }, height: { fixed: 10 } } });
       await expect.poll(() => inspector.getByTestId('properties').getAttribute('data-path')).toBe(`${ROOT}/顶栏/矩形`);
 
-      // 字段拖到图上的道路带：生成绑好插槽的文字，名字取显示名称（重名加序号），放进这个模板自己的容器。
+      // 字段在左面板的"添加"页。拖到图上的道路带：生成绑好插槽的文字，名字取显示名称（重名加序号），放进这个模板自己的容器。
+      await side.getByRole('tab', { name: '添加' }).click();
       const walk = (node: { path: string; x: number; y: number; width: number; height: number; children?: unknown[] }): typeof node | undefined => (node.path === `${ROOT}/道路带` ? node : (node.children as typeof node[] | undefined)?.map(walk).find(Boolean));
       const road = walk(layout.root)!, canvas = target.getByTestId('design-canvas'), box = (await canvas.boundingBox())!;
       saved = stashed();
@@ -3206,8 +3209,9 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await saved;
       expect(JSON.stringify(await current())).toContain('"list":{"var":"stops"},"template":"站点"');
 
-      // 拖经"结构"页签放到树上：椭圆放进底栏。
-      const ellipse = side.locator('[data-testid="add-element"][data-kind="ellipse"]');
+      // 从形状目录拖出来，拖经"结构"页签放到树上：椭圆放进底栏。拖起来以后目录藏起来，不挡要放的地方。
+      await target.getByTestId('insert-shape').click();
+      const ellipse = target.locator('[data-testid="add-element"][data-kind="ellipse"]');
       const from = (await ellipse.boundingBox())!;
       await target.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
       await target.mouse.down();
@@ -3875,7 +3879,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await write(() => text('place.margin.bottom').fill('2'));
 
       // 名称区：容器，内边距 1，纵向居中，宽随内容、高撑满；本站时高亮底色。
-      await write(() => side.locator('[data-testid="add-element"][data-kind="container"]').click());
+      await write(() => target.getByRole('group', { name: '插入' }).locator('[data-testid="add-element"][data-kind="container"]').click());
       await selected(`${NAME}/容器`);
       await write(() => text('name').fill('名称区'));
       await selected(`${NAME}/名称区`);
@@ -4621,6 +4625,196 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await write(() => field('rotation').getByTestId('state-reset').click());
       expect((await stopName()).states?.cases['本站'] ?? {}).not.toHaveProperty('rotation');
       await expectHidden(['rotation']);
+      for (let step = 0; step < 20 && await undo.isEnabled(); step++) await write(() => undo.click());
+      expect(await contentOf(STOP)).toEqual(stopBefore);
+      await server('DELETE', `/v1/templates/${enc(STOP)}/working-copy`, token);
+      await server('DELETE', `/v1/templates/${enc(ROOT)}/working-copy`, token);
+      await leaveDesign(target, ROOT);
+    }, 240_000);
+
+    it('模板设计（第三轮 06）：底部工具栏点一下、按 T 或 F 加到选中的位置，写回与同一操作逐字节相同，也能拖到图上；形状点开是小目录，循环与调用先选列表、数据与模板；打字时快捷键不算，V、H 照旧；"添加"页只剩从字段创建；撤销回到原样', async () => {
+      const ROOT = '标准线路单边', STOP = '站点', token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ROOT);
+      type Element = { name: string; type?: string; children?: Element[]; [key: string]: unknown };
+      type Box = { path: string; x: number; y: number; width: number; height: number; children?: Box[] };
+      const textOf = async (name: string) => {
+        const copy = await server('GET', `/v1/templates/${enc(name)}/working-copy`, token);
+        return (copy.status === 200 ? copy.body.content : (await server('GET', `/v1/templates/${enc(name)}/content`, token)).body.content) as string;
+      };
+      const contentOf = async (name: string) => JSON.parse(await textOf(name)) as { artboard: Element & { children: Element[] } };
+      const find = (node: Element, name: string): Element | undefined => (node.name === name ? node : (node.children ?? []).map((child) => find(child, name)).find(Boolean));
+      const severe = async (name: string) => checkDslDocument(await contentOf(name)).problems.filter((problem) => problem.level === 'severe');
+      const before = await contentOf(ROOT), stopBefore = await contentOf(STOP);
+      const replied = target.waitForResponse((response) => response.url().endsWith('/v1/previews?workingCopies=true') && response.status() === 200, { timeout: 60_000 });
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
+      const { layout } = await (await replied).json() as { layout: { output: { width: number; height: number }; root: Box } };
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      const write = async (action: () => Promise<unknown>) => { const saved = stashed(); await action(); await saved; };
+      const pick = async (path: string) => {
+        await side.locator(`[data-testid="structure-row"][data-path="${path}"]`).getByRole('button').first().click();
+        await inspector.locator(`[data-testid="properties"][data-path="${path}"]`).waitFor();
+      };
+      const attributes = (nodes: Locator, name: string) => nodes.evaluateAll((all, key) => all.map((node) => (node as unknown as { getAttribute(key: string): string | null }).getAttribute(key)), name);
+      const undo = target.getByRole('button', { name: '撤销', exact: true });
+      const dock = target.locator('.design-dock'), bar = target.getByRole('group', { name: '插入' }), pop = target.getByTestId('insert-pop'), shape = target.getByTestId('insert-shape');
+      const tool = (kind: string) => target.locator(`[data-testid="add-element"][data-kind="${kind}"]`);
+      const where = async () => (await tool('text').getAttribute('title'))!;
+      const selectedPath = () => inspector.getByTestId('properties').getAttribute('data-path');
+      const rows = side.locator('[data-testid="structure-row"]');
+      /**
+       * 同一个选中、同一种元素，写回只有一种：template/create.ts 的 insertionPoint 加 insertElement（票据 14 的添加走的就是它）。
+       * 工具栏、快捷键与小表单写进工作副本的文本要和它逐字节相同，加完选中新元素。
+       */
+      const adds = async (name: string, kind: NewKind, selected: string | undefined, action: () => Promise<unknown>, bindings: Bindings = {}) => {
+        const document = parseTemplateText(await textOf(name)), point = insertionPoint(document, name, selected);
+        const want = insertElement(document, name, point.container, newElement(kind, document, bindings), { index: point.index })!;
+        await write(action);
+        expect(await textOf(name), `${kind} 加到 ${selected ?? '画板'}`).toBe(templateText(want.document));
+        await expect.poll(selectedPath).toBe(want.path);
+        return want.path;
+      };
+
+      // 工具栏从左到右：选择、平移 ｜ 文字、图片、形状、容器、循环、调用 ｜ 缩放 ｜ 叠加层 ｜ 面板。评论是第四期，不显示。
+      expect(await attributes(dock.locator('[role="group"]'), 'aria-label')).toEqual(['工具', '插入', '缩放', '叠加层', '面板']);
+      expect(await attributes(bar.locator('> button'), 'aria-label')).toEqual(['文字', '图片', '形状', '容器', '循环', '调用']);
+      expect(await dock.getByRole('button', { name: /评论/u }).count(), '评论是第四期').toBe(0);
+
+      // 拖到图上：把"容器"拖到顶栏的留白上，放进落点最深的那个容器（落在循环的一项上会放进被调模板，和票据 14 一样）。
+      const walk = (node: Box): Box | undefined => (node.path === `${ROOT}/顶栏/顶栏留白` ? node : (node.children ?? []).map(walk).find(Boolean));
+      const blank = walk(layout.root)!, canvas = target.getByTestId('design-canvas'), area = (await canvas.boundingBox())!;
+      expect(blank.width, '留白要有地方落').toBeGreaterThan(4);
+      await write(() => tool('container').dragTo(canvas, { targetPosition: { x: ((blank.x + blank.width / 2) / layout.output.width) * area.width, y: ((blank.y + blank.height / 2) / layout.output.height) * area.height } }));
+      expect((find((await contentOf(ROOT)).artboard, '顶栏留白')!.children ?? []).map((child) => [child.name, child.type])).toEqual([['容器', 'container']]);
+      await expect.poll(selectedPath).toBe(`${ROOT}/顶栏/顶栏留白/容器`);
+
+      // Esc 一层一层往上，直到什么也没选：这时点"文字"，加在画板的最后。
+      for (let step = 0; step < 4 && !(await where()).includes(`画板「${ROOT}」的最后`); step++) await target.keyboard.press('Escape');
+      expect(await where()).toBe(`文字 T：加到画板「${ROOT}」的最后，也能拖到图上或图层里`);
+      const first = await adds(ROOT, 'text', undefined, () => tool('text').click());
+      expect(first).toBe(`${ROOT}/文字`);
+
+      // 选中的是文字，不是容器：按 T，放在它后面。
+      expect(await where()).toBe(`文字 T：加到画板「${ROOT}」，放在「文字」后面，也能拖到图上或图层里`);
+      const second = await adds(ROOT, 'text', first, () => target.keyboard.press('t'));
+      expect((await contentOf(ROOT)).artboard.children.slice(-2).map((child) => child.name)).toEqual(['文字', '文字2']);
+
+      // 打字时不算：改名框里按 T、F 是打字；Esc 作罢，什么也没加，选中没动。
+      const count = await rows.count(), quiet = await textOf(ROOT);
+      await target.keyboard.press('F2');
+      const rename = side.getByTestId('rename-input');
+      await rename.waitFor();
+      await target.keyboard.press('t');
+      await target.keyboard.press('F');
+      expect(await rename.inputValue()).toBe('tF');
+      await target.keyboard.press('Escape');
+      await rename.waitFor({ state: 'detached' });
+      expect(await rows.count()).toBe(count);
+      expect(await selectedPath()).toBe(second);
+      expect(await textOf(ROOT)).toBe(quiet);
+
+      // V、H 照旧切工具，不加元素。
+      const tools = target.getByRole('group', { name: '工具' }), pressed = target.locator('[aria-pressed="true"]');
+      await target.keyboard.press('h');
+      await tools.getByRole('button', { name: '平移' }).and(pressed).waitFor();
+      await target.keyboard.press('v');
+      await tools.getByRole('button', { name: '选择' }).and(pressed).waitFor();
+      expect(await rows.count()).toBe(count);
+
+      // 选中顶栏（容器）：按 F，容器加在顶栏的最后；大写也认。
+      await pick(`${ROOT}/顶栏`);
+      const holder = await adds(ROOT, 'container', `${ROOT}/顶栏`, () => target.keyboard.press('F'));
+      expect(holder).toBe(`${ROOT}/顶栏/容器2`);
+
+      // 形状点开是七种的小目录，写明加到哪；点别处收起。
+      await shape.click();
+      expect(await pop.getByRole('button').allTextContents()).toEqual(['矩形', '椭圆', '线条', '多边形', '路径', '二维码', '条码']);
+      expect(await pop.getByTestId('insert-target').textContent()).toBe('「容器2」的最后');
+      expect(await shape.getAttribute('aria-expanded')).toBe('true');
+      await side.getByRole('tab', { name: '结构' }).click();
+      await pop.waitFor({ state: 'detached' });
+      expect(await shape.getAttribute('aria-expanded')).toBe('false');
+      // 点线条：加进刚才的容器，目录收起；再点图片，放在线条后面。
+      await shape.click();
+      const line = await adds(ROOT, 'line', holder, () => tool('line').click());
+      await pop.waitFor({ state: 'detached' });
+      await adds(ROOT, 'image', line, () => tool('image').click());
+      expect(find((await contentOf(ROOT)).artboard, '容器2')!.children!.map((child) => child.type)).toEqual(['line', 'image']);
+
+      // 循环：点开是小表单，先选列表，再选基准相符的模板；下拉框有焦点时按 T 不加元素。
+      await pick(`${ROOT}/底栏`);
+      await tool('loop').click();
+      const loopForm = target.getByRole('form', { name: '添加循环容器' }), addLoop = loopForm.getByRole('button', { name: '添加循环容器' });
+      await loopForm.waitFor();
+      expect(await loopForm.getByTestId('insert-target').textContent()).toBe('「底栏」的最后');
+      expect(await addLoop.isDisabled(), '没选列表与模板不能加').toBe(true);
+      const lists = loopForm.getByLabel('循环的列表');
+      await lists.press('t');
+      expect(await selectedPath()).toBe(`${ROOT}/底栏`);
+      await loopForm.waitFor();
+      await lists.selectOption('stops');
+      const callee = loopForm.getByLabel('被调模板');
+      await expect.poll(async () => (await callee.locator('option').allTextContents()).filter((name) => name === '站点' || name === '道路段')).toEqual(['站点', '道路段']);
+      const offered = await callee.locator('option').allTextContents();
+      expect([offered[0], offered.at(-1)]).toEqual(['选一个模板', '+ 新建模板…']);
+      // 当场新建：基准预先填好；取消回到表单，表单还开着（弹窗里的点按不算点别处）。
+      await callee.selectOption({ label: '+ 新建模板…' });
+      const dialog = target.getByRole('dialog', { name: '新建模板' });
+      expect(await dialog.getByTestId('new-template-base').textContent()).toBe('停靠站点 v1');
+      await dialog.getByRole('button', { name: '取消' }).click();
+      await dialog.waitFor({ state: 'detached' });
+      await loopForm.waitFor();
+      await callee.selectOption('站点');
+      const loop = await adds(ROOT, 'loop', `${ROOT}/底栏`, () => addLoop.click(), { list: 'stops', template: '站点' });
+      await loopForm.waitFor({ state: 'detached' });
+      expect(loop).toBe(`${ROOT}/底栏/循环容器`);
+      expect(find((await contentOf(ROOT)).artboard, '底栏')!.children!.at(-1)).toMatchObject({ type: 'loop', list: { var: 'stops' }, template: '站点' });
+
+      // 左面板的"添加"页：元素目录搬走了，只剩从字段创建；加到哪和工具栏说的一样。
+      await side.getByRole('tab', { name: '添加' }).click();
+      const panel = side.getByTestId('add-panel');
+      await panel.locator('[data-testid="add-field"]').first().waitFor();
+      expect(await panel.locator('[data-testid="add-element"]').count(), '元素目录不在这一页了').toBe(0);
+      expect(await panel.getByTestId('add-target').textContent()).toBe('「底栏」，放在「循环容器」后面');
+      await side.getByRole('tab', { name: '结构' }).click();
+
+      expect(await severe(ROOT)).toEqual([]);
+      for (let step = 0; step < 20 && await undo.isEnabled(); step++) await write(() => undo.click());
+      expect(await contentOf(ROOT)).toEqual(before);
+
+      // 调用：到站点里（从主模板进去），选中名称区。传当前数据时被调模板的基准和站点相同，不列站点自己。
+      await target.goto(`${baseUrl}/console/#/templates/${enc(STOP)}/design?in=${enc(ROOT)}`);
+      await target.getByTestId('preview-image').waitFor();
+      for (const row of ['站点面板', '站点列']) await openRow(side, row);
+      await pick(`${STOP}/名称区`);
+      await tool('call').click();
+      const callForm = target.getByRole('form', { name: '添加子模板调用' }), addCall = callForm.getByRole('button', { name: '添加子模板调用' });
+      const data = callForm.getByLabel('传给它的数据'), called = callForm.getByLabel('被调模板');
+      const sources = await data.locator('option').allTextContents();
+      expect([sources[0], sources.at(-1)]).toEqual(['当前数据（停靠站点 v1）', '不传数据']);
+      expect(await callForm.getByTestId('insert-target').textContent()).toBe('「名称区」的最后');
+      await expect.poll(async () => (await called.locator('option').allTextContents()).includes('道路段')).toBe(true);
+      expect(await called.locator('option').allTextContents(), '不列自己').not.toContain(STOP);
+      // 换成不传数据：被调模板的基准跟着变成空数据定义；没选模板不能加。
+      await data.selectOption('none');
+      await callForm.filter({ hasText: '空数据定义 v1' }).waitFor();
+      expect(await addCall.isDisabled()).toBe(true);
+      // Esc 收起表单：不往上选父级，焦点回到"调用"。
+      await target.keyboard.press('Escape');
+      await callForm.waitFor({ state: 'detached' });
+      expect(await selectedPath()).toBe(`${STOP}/名称区`);
+      expect(await tool('call').evaluate((node) => (node as unknown as { ownerDocument: { activeElement: unknown } }).ownerDocument.activeElement === node), '焦点回到按钮').toBe(true);
+      // 再点开是一张新表单；选道路段，加在名称区的最后。
+      await tool('call').click();
+      expect(await data.inputValue()).toBe('current');
+      await called.selectOption('道路段');
+      const call = await adds(STOP, 'call', `${STOP}/名称区`, () => addCall.click(), { template: '道路段', data: 'current' });
+      await callForm.waitFor({ state: 'detached' });
+      expect(call).toBe(`${STOP}/名称区/子模板调用`);
+      expect(find((await contentOf(STOP)).artboard, '名称区')!.children!.at(-1)).toMatchObject({ type: 'call', template: '道路段', data: 'current' });
+      expect(await severe(STOP)).toEqual([]);
       for (let step = 0; step < 20 && await undo.isEnabled(); step++) await write(() => undo.click());
       expect(await contentOf(STOP)).toEqual(stopBefore);
       await server('DELETE', `/v1/templates/${enc(STOP)}/working-copy`, token);

@@ -9,7 +9,7 @@ import type { LivePreview } from '../hooks.js';
 import { hitStack } from '../template/document.js';
 import type { JsonObject } from '../template/document.js';
 import type { LayoutNode } from '../types.js';
-import { isAddDrag } from './add-panel.js';
+import { isAddDrag } from './insert-bar.js';
 import { HandleLayer } from './handles.js';
 import type { HandleInput, HandleResult } from '../template/handles.js';
 import { contentKind, fitSummary, flatNodes, layoutGuides, type Layers } from './overlays.js';

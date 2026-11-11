@@ -1,3 +1,6 @@
+/** 工具栏上"形状"那一格：一方一圆叠着。 */
+export const SHAPES_ICON = 'M4 4h10v10H4zM20 15a5 5 0 1 1-10 0 5 5 0 0 1 10 0z';
+
 /** 元素类型的小图标：一条路径，配 components/icon.tsx。 */
 export const ELEMENT_ICONS: Readonly<Record<string, string>> = {
   artboard: 'M5 4h14v16H5zM2 8h3M2 16h3M19 8h3M19 16h3',

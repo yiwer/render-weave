@@ -1,135 +1,31 @@
 /**
- * 左面板的"添加"页（模板设计页票据 14，方案第 13 节）：元素目录与从字段创建。点一下加到选中的容器（选中的不是容器就放在它后面），
- * 或者拖到结构树与舞台上。循环、调用与列表、单引用字段要先选基准相符的模板。写回在 template/create.ts。
+ * 左面板的"添加"页（模板设计页票据 14，方案第 13 节）：从字段创建。点一下加到选中的容器（选中的不是容器就放在它后面），
+ * 或者拖到结构树与舞台上。列表、单引用字段要先选基准相符的模板。写回在 template/create.ts。
+ * 元素目录在第三轮票据 06 搬到了底部工具栏（design/insert-bar.tsx）；这一页在票据 07 并进"数据"页之前先留着。
  */
-import { useState, type DragEvent } from 'react';
-import { api, ApiError } from '../api.js';
-import { NewTemplate } from '../components/new-template.js';
-import { Icon } from '../components/icon.js';
+import { useState } from 'react';
 import { TYPE_GLYPHS } from '../components/value-text.js';
-import { useLoad } from '../hooks.js';
-import { CATALOG, fieldInfo, matchingTemplates, newElement, planFromField, type FieldInfo, type NewKind, type SchemaRef } from '../template/create.js';
-import { isObject, type JsonObject } from '../template/document.js';
-import type { DefinitionField } from '../types.js';
-import { ELEMENT_ICONS } from './icons.js';
-
-/** 正在拖的新元素：拖动时读不到 dataTransfer 的内容，放在这里给结构树与舞台看。 */
-export interface AddPayload { readonly template: string; readonly element: JsonObject; readonly fromField: boolean }
-let pending: AddPayload | undefined;
-export const currentAdd = () => pending;
-export const ADD_TYPE = 'application/x-renderweave-add';
-
-const startDrag = (event: DragEvent<HTMLElement>, payload: AddPayload) => {
-  pending = payload;
-  event.dataTransfer.effectAllowed = 'copy';
-  event.dataTransfer.setData(ADD_TYPE, String(payload.element['type']));
-};
-const endDrag = () => { pending = undefined; };
-
-const refText = (ref: SchemaRef) => `${ref.name} v${ref.version}`;
-const EMPTY: SchemaRef = { name: '空数据定义', version: 1 };
-
-const NEW = '\u0000new';
-
-/** 选模板：只列基准相符的；也能当场从空白新建一个，基准预先填好（票据 18）。 */
-function TemplateChoice(props: { readonly base: SchemaRef | undefined; readonly templates: readonly { readonly name: string; readonly base?: SchemaRef }[]; readonly self: string; readonly value: string; readonly why: string; readonly onChange: (name: string) => void }) {
-  const [creating, setCreating] = useState(false);
-  const names = props.base ? matchingTemplates(props.templates, props.base).filter((name) => name !== props.self) : [];
-  if (!props.base) return <p className="small muted">先选上面那一项。</p>;
-  const dialog = creating && <NewTemplate base={{ ref: props.base, why: props.why }} onClose={() => setCreating(false)} onCreated={(name) => { setCreating(false); props.onChange(name); }} />;
-  if (names.length === 0 && !props.value) {
-    return (
-      <div className="small add-field" data-testid="no-template">
-        <span className="muted">还没有基准是「{refText(props.base)}」的模板。</span>
-        <button type="button" className="small" data-testid="new-template" onClick={() => setCreating(true)}>新建一个</button>
-        {dialog}
-      </div>
-    );
-  }
-  return (
-    <label className="small add-field">被调模板（基准 {refText(props.base)}）
-      <select aria-label="被调模板" autoFocus value={props.value} onChange={(event) => { if (event.target.value === NEW) setCreating(true); else props.onChange(event.target.value); }}>
-        <option value="">选一个模板</option>
-        {props.value && !names.includes(props.value) && <option value={props.value}>{props.value}（新建，未发布）</option>}
-        {names.map((name) => <option key={name} value={name}>{name}</option>)}
-        <option value={NEW}>+ 新建模板…</option>
-      </select>
-      {dialog}
-    </label>
-  );
-}
+import { planFromField } from '../template/create.js';
+import type { JsonObject } from '../template/document.js';
+import { endAddDrag, refText, startAddDrag, TemplateChoice, type InsertSources } from './insert-bar.js';
 
 export function AddPanel(props: {
-  readonly template: string; readonly document: JsonObject; readonly targetLabel: string; readonly selectionLabel?: string;
+  readonly template: string; readonly document: JsonObject; readonly sources: InsertSources; readonly targetLabel: string; readonly selectionLabel?: string;
   readonly onAdd: (element: JsonObject) => void; readonly onBindVisible: (variable: string) => void;
 }) {
-  const { template, document } = props;
-  const base = isObject(document['base']) ? document['base'] as unknown as SchemaRef : undefined;
-  const detail = useLoad(() => (base ? api.staticSchema(base.name, base.version).catch((error: unknown) => { if (error instanceof ApiError) return undefined; throw error; }) : Promise.resolve(undefined)), `${base?.name}@${base?.version}`);
-  const templates = useLoad(() => api.templates(), 'design-add-templates');
-  const resources = useLoad(() => api.resources(), 'design-add-resources');
-  const font = resources.data?.resources.find((resource) => resource.kind === 'font');
-  const bindings = font ? { font: `res:${font.id}` } : {};
-  const fields: readonly FieldInfo[] = (detail.data?.definition.fields ?? []).map((field: DefinitionField) => fieldInfo(field as never));
-  const all = (templates.data?.templates ?? []).map((item) => ({ name: item.name, ...(item.base ? { base: item.base as SchemaRef } : {}) }));
+  const { template, document } = props, { base, fields, bindings } = props.sources;
   const [open, setOpen] = useState<string>();
-  const [chosen, setChosen] = useState({ template: '', list: '', data: 'current' });
-  const reset = (key?: string) => { setOpen(key); setChosen({ template: '', list: '', data: 'current' }); };
+  const [chosen, setChosen] = useState('');
+  const reset = (key?: string) => { setOpen(key); setChosen(''); };
 
-  const lists = fields.filter((field) => field.type === 'list'), refs = fields.filter((field) => field.type === 'ref');
-  const listBase = lists.find((field) => field.name === chosen.list)?.target;
-  const callBase = chosen.data === 'current' ? base : chosen.data === 'none' ? EMPTY : refs.find((field) => field.name === chosen.data)?.target;
-
-  const catalogItem = (kind: NewKind, label: string, needsTemplate?: true) => {
-    const element = needsTemplate ? undefined : newElement(kind, document, bindings);
-    return (
-      <div key={kind} className="add-item-wrap">
-        <button type="button" className="add-item" data-testid="add-element" data-kind={kind} draggable={Boolean(element)} aria-expanded={needsTemplate ? open === kind : undefined}
-          title={needsTemplate ? '先选模板' : `加到${props.targetLabel}，也可以拖到结构树或图上`}
-          onDragStart={(event) => element && startDrag(event, { template, element, fromField: false })} onDragEnd={endDrag}
-          onClick={() => (element ? props.onAdd(element) : reset(open === kind ? undefined : kind))}>
-          <Icon d={ELEMENT_ICONS[kind] ?? ELEMENT_ICONS['container']!} /><span>{label}</span>
-        </button>
-      </div>
-    );
-  };
   return (
     <div className="add-panel" data-testid="add-panel">
       <p className="small faint">加到 <strong data-testid="add-target">{props.targetLabel}</strong>：选中容器就放进去，选中别的元素就放在它后面。也可以拖到结构树或图上。</p>
-      <section aria-label="元素" className="add-section">
-        <h3>元素</h3>
-        <div className="add-grid">{CATALOG.map((item) => catalogItem(item.kind, item.label, item.needsTemplate))}</div>
-        {open === 'loop' && (
-          <form className="add-form" aria-label="添加循环容器" onSubmit={(event) => { event.preventDefault(); if (chosen.list && chosen.template) { props.onAdd(newElement('loop', document, { list: chosen.list, template: chosen.template })); reset(); } }}>
-            <label className="small add-field">循环的列表
-              <select aria-label="循环的列表" autoFocus value={chosen.list} onChange={(event) => setChosen({ ...chosen, list: event.target.value, template: '' })}>
-                <option value="">选一个列表字段</option>
-                {lists.map((field) => <option key={field.name} value={field.name}>{field.label}</option>)}
-              </select>
-            </label>
-            {lists.length === 0 && <p className="small muted">这个模板的数据里没有列表字段。</p>}
-            {chosen.list && <TemplateChoice base={listBase} templates={all} self={template} value={chosen.template} why={`循环的每一项是「${lists.find((field) => field.name === chosen.list)?.label ?? chosen.list}」的一项，被调模板的基准就是它。`} onChange={(name) => setChosen({ ...chosen, template: name })} />}
-            <button type="submit" className="small" disabled={!chosen.list || !chosen.template}>添加循环容器</button>
-          </form>
-        )}
-        {open === 'call' && (
-          <form className="add-form" aria-label="添加子模板调用" onSubmit={(event) => { event.preventDefault(); if (chosen.template) { props.onAdd(newElement('call', document, { template: chosen.template, data: chosen.data === 'current' || chosen.data === 'none' ? chosen.data : { var: chosen.data } })); reset(); } }}>
-            <label className="small add-field">传给它的数据
-              <select aria-label="传给它的数据" autoFocus value={chosen.data} onChange={(event) => setChosen({ ...chosen, data: event.target.value, template: '' })}>
-                <option value="current">当前数据（{base ? refText(base) : '没有基准'}）</option>
-                {refs.map((field) => <option key={field.name} value={field.name}>字段 {field.label}</option>)}
-                <option value="none">不传数据</option>
-              </select>
-            </label>
-            <TemplateChoice base={callBase} templates={all} self={template} value={chosen.template} why={chosen.data === 'none' ? '这个调用不传数据，被调模板的基准是空数据定义。' : chosen.data === 'current' ? '这个调用传当前数据，被调模板的基准和这个模板相同。' : '这个调用传这个单引用字段，被调模板的基准是它指向的数据定义。'} onChange={(name) => setChosen({ ...chosen, template: name })} />
-            <button type="submit" className="small" disabled={!chosen.template}>添加子模板调用</button>
-          </form>
-        )}
-      </section>
+      <p className="small faint">文字、图片、形状、容器、循环、调用从底部工具栏加。</p>
       <section aria-label="从字段创建" className="add-section">
         <h3>从字段创建<span className="small faint"> {base ? refText(base) : ''}</span></h3>
         {!base && <p className="small muted">这个模板没有写数据定义。</p>}
-        {fields.length === 0 && base && <p className="small muted">{detail.loading ? '正在读取字段…' : '读不到字段：内置的单值数据定义只有 value。'}</p>}
+        {fields.length === 0 && base && <p className="small muted">{props.sources.loadingFields ? '正在读取字段…' : '读不到字段：内置的单值数据定义只有 value。'}</p>}
         <ul className="add-fields">
           {fields.map((field) => {
             const plan = planFromField(field, document, bindings);
@@ -140,7 +36,7 @@ export function AddPanel(props: {
               <li key={field.name}>
                 <button type="button" className="add-field-row" data-testid="add-field" data-name={field.name} draggable={Boolean(element)} disabled={plan.kind === 'none' || (plan.kind === 'visible' && !props.selectionLabel)}
                   title={plan.kind === 'visible' && !props.selectionLabel ? '先选中一个元素' : field.name} aria-expanded={plan.kind === 'template' ? open === key : undefined}
-                  onDragStart={(event) => element && startDrag(event, { template, element, fromField: true })} onDragEnd={endDrag}
+                  onDragStart={(event) => element && startAddDrag(event, { template, element, fromField: true })} onDragEnd={endAddDrag}
                   onClick={() => {
                     if (plan.kind === 'element') props.onAdd(plan.element);
                     else if (plan.kind === 'visible') props.onBindVisible(plan.variable);
@@ -151,9 +47,9 @@ export function AddPanel(props: {
                   <span className="small faint">{plan.kind === 'visible' && props.selectionLabel ? `绑到「${props.selectionLabel}」的显示` : what}</span>
                 </button>
                 {open === key && plan.kind === 'template' && (
-                  <form className="add-form" aria-label={`从 ${field.label} 创建`} onSubmit={(event) => { event.preventDefault(); if (chosen.template) { props.onAdd(plan.element(chosen.template)); reset(); } }}>
-                    <TemplateChoice base={plan.base} templates={all} self={template} value={chosen.template} why={field.type === 'list' ? `循环的每一项是「${field.label}」的一项，被调模板的基准就是它。` : `调用传「${field.label}」这份数据，被调模板的基准是它指向的数据定义。`} onChange={(name) => setChosen({ ...chosen, template: name })} />
-                    <button type="submit" className="small" disabled={!chosen.template}>{field.type === 'list' ? '添加循环容器' : '添加子模板调用'}</button>
+                  <form className="add-form" aria-label={`从 ${field.label} 创建`} onSubmit={(event) => { event.preventDefault(); if (chosen) { props.onAdd(plan.element(chosen)); reset(); } }}>
+                    <TemplateChoice base={plan.base} templates={props.sources.templates} self={template} value={chosen} why={field.type === 'list' ? `循环的每一项是「${field.label}」的一项，被调模板的基准就是它。` : `调用传「${field.label}」这份数据，被调模板的基准是它指向的数据定义。`} onChange={setChosen} />
+                    <button type="submit" className="small" disabled={!chosen}>{field.type === 'list' ? '添加循环容器' : '添加子模板调用'}</button>
                   </form>
                 )}
               </li>
@@ -164,7 +60,3 @@ export function AddPanel(props: {
     </div>
   );
 }
-
-/** 拖到结构树或图上之前：这一份能不能放进 template 这个模板。字段只属于这个模板自己的数据，放进别的模板就绑错了。 */
-export const canDropInto = (payload: AddPayload | undefined, template: string) => Boolean(payload && (!payload.fromField || payload.template === template));
-export const isAddDrag = (event: DragEvent<HTMLElement>) => event.dataTransfer.types.includes(ADD_TYPE);

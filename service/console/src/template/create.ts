@@ -18,6 +18,22 @@ export const CATALOG: readonly { readonly kind: NewKind; readonly label: string;
   { kind: 'container', label: '容器' }, { kind: 'loop', label: '循环容器', needsTemplate: true }, { kind: 'call', label: '子模板调用', needsTemplate: true },
 ];
 
+/**
+ * 底部工具栏的插入一组（第三轮票据 06）：文字、图片、形状、容器、循环、调用，形状点开是 SHAPE_KINDS。
+ * 直接摆出来的五种加上形状里的七种就是元素目录，不重不漏；key 是不带修饰键的快捷键。
+ */
+export const INSERT_BAR: readonly { readonly tool: NewKind | 'shape'; readonly label: string; readonly key?: string }[] = [
+  { tool: 'text', label: '文字', key: 'T' }, { tool: 'image', label: '图片' }, { tool: 'shape', label: '形状' },
+  { tool: 'container', label: '容器', key: 'F' }, { tool: 'loop', label: '循环' }, { tool: 'call', label: '调用' },
+];
+export const SHAPE_KINDS: readonly NewKind[] = ['rect', 'ellipse', 'line', 'polygon', 'path', 'qrcode', 'barcode'];
+
+/** 按下的键加哪种元素：只认工具栏上写了快捷键、点一下就能加的那几种（T 文字、F 容器）。 */
+export const insertKey = (key: string): NewKind | undefined => {
+  const tool = INSERT_BAR.find((item) => item.key?.toLowerCase() === key.toLowerCase())?.tool;
+  return tool && tool !== 'shape' ? tool : undefined;
+};
+
 /** 字体资源一个也没用过时的后备：页面传进来资源库里的第一种字体。 */
 const FALLBACK_FONT = 'res:font-hei-medium';
 const GREY = '#CCCCCC';
@@ -114,6 +130,13 @@ export function insertionPoint(document: JsonObject, template: string, selected:
   const container = path.slice(0, path.lastIndexOf('/')), name = path.slice(path.lastIndexOf('/') + 1);
   const siblings = childrenOf(find(document, container)!);
   return { container, index: siblings.findIndex((child) => isObject(child) && child['name'] === name) + 1 };
+}
+
+/** insertionPoint 说给人听：加进哪个容器，放在谁后面。工具栏的提示与"添加"页共用。 */
+export function insertionLabel(document: JsonObject, template: string, selected: string | undefined): string {
+  const point = insertionPoint(document, template, selected), last = (path: string) => path.slice(path.lastIndexOf('/') + 1);
+  const holder = point.container === template ? `画板「${template}」` : `「${last(point.container)}」`;
+  return selected && selected !== point.container && find(document, selected) ? `${holder}，放在「${last(selected)}」后面` : `${holder}的最后`;
 }
 
 // —— 从字段创建 ——

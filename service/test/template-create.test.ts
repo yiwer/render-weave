@@ -4,8 +4,8 @@
  */
 import { readFile } from 'node:fs/promises';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { CATALOG, fieldInfo, insertElement, insertionPoint, matchingTemplates, newElement, planFromField, type FieldInfo } from '../console/src/template/create.js';
-import { elementAt, flatElements, type JsonObject } from '../console/src/template/document.js';
+import { CATALOG, INSERT_BAR, SHAPE_KINDS, fieldInfo, insertElement, insertionLabel, insertionPoint, insertKey, matchingTemplates, newElement, planFromField, type FieldInfo } from '../console/src/template/create.js';
+import { elementAt, flatElements, templateText, type JsonObject } from '../console/src/template/document.js';
 import { checkDslDocument } from '../src/engine.js';
 import { ALL_ELEMENTS_FILE, M402_DIR } from './seed.js';
 
@@ -82,6 +82,47 @@ describe('放下的位置决定写什么', () => {
   it('文字的字体取模板里已在用的', () => {
     expect(newElement('text', route)['font']).toBe('res:font-hei-heavy');
     expect(newElement('text', { artboard: {} }, { font: 'res:x' })['font']).toBe('res:x');
+  });
+});
+
+describe('底部工具栏（第三轮票据 06）', () => {
+  it('直接摆出来的加上形状里的就是元素目录，不重不漏；顺序是文字、图片、形状、容器、循环、调用', () => {
+    expect(INSERT_BAR.map((item) => item.label)).toEqual(['文字', '图片', '形状', '容器', '循环', '调用']);
+    const kinds = [...INSERT_BAR.map((item) => item.tool).filter((tool) => tool !== 'shape'), ...SHAPE_KINDS];
+    expect([...kinds].sort()).toEqual(CATALOG.map((item) => item.kind).sort());
+    expect(SHAPE_KINDS.map((kind) => CATALOG.find((item) => item.kind === kind)!.label)).toEqual(['矩形', '椭圆', '线条', '多边形', '路径', '二维码', '条码']);
+    expect(SHAPE_KINDS.some((kind) => CATALOG.find((item) => item.kind === kind)!.needsTemplate), '形状里的点一下就能加').toBe(false);
+  });
+
+  it('快捷键：T 加文字，F 加容器，不分大小写；别的键与要先选模板的不认', () => {
+    expect([insertKey('t'), insertKey('T'), insertKey('f'), insertKey('F')]).toEqual(['text', 'text', 'container', 'container']);
+    expect(['v', 'h', 'l', 'c', 's', '', 'tt'].map(insertKey)).toEqual(Array(7).fill(undefined));
+  });
+
+  it('加到哪说给人听：选中容器是它的最后，选中别的是放在它后面，没选中或选中的不在了是画板的最后', () => {
+    const top = `${ROUTE}/顶栏`, first = String((elementAt(route, top)!.element['children'] as JsonObject[])[0]!['name']);
+    expect(insertionLabel(route, ROUTE, top)).toBe('「顶栏」的最后');
+    expect(insertionLabel(route, ROUTE, `${top}/${first}`)).toBe(`「顶栏」，放在「${first}」后面`);
+    expect(insertionLabel(route, ROUTE, undefined)).toBe(`画板「${ROUTE}」的最后`);
+    expect(insertionLabel(route, ROUTE, ROUTE)).toBe(`画板「${ROUTE}」的最后`);
+    expect(insertionLabel(route, ROUTE, `${ROUTE}/没有这个`)).toBe(`画板「${ROUTE}」的最后`);
+    const direct = String((elementAt(all, ALL)!.element['children'] as JsonObject[]).find((child) => child['type'] !== 'container')!['name']);
+    expect(insertionLabel(all, ALL, `${ALL}/${direct}`)).toBe(`画板「${ALL}」，放在「${direct}」后面`);
+  });
+
+  it('同一个选中、同一种元素，写回只有一种：文本逐字节相同，位置就是 insertionPoint 说的', () => {
+    const top = `${ROUTE}/顶栏`, first = String((elementAt(route, top)!.element['children'] as JsonObject[])[0]!['name']);
+    for (const selected of [undefined, top, `${top}/${first}`]) {
+      for (const kind of CATALOG.map((item) => item.kind)) {
+        const element = () => newElement(kind, route, { list: 'stops', template: '站点', data: 'current' });
+        const point = insertionPoint(route, ROUTE, selected);
+        const once = insertElement(route, ROUTE, point.container, element(), { index: point.index })!, again = insertElement(route, ROUTE, point.container, element(), { index: point.index })!;
+        expect(templateText(once.document)).toBe(templateText(again.document));
+        const kids = elementAt(once.document, point.container)!.element['children'] as JsonObject[];
+        expect(kids[point.index]!['name'], `${kind} @ ${selected}`).toBe(once.path.split('/').at(-1));
+        expect(severe(once.document), `${kind} @ ${selected}`).toEqual([]);
+      }
+    }
   });
 });
 

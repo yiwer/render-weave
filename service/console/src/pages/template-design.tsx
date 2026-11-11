@@ -4,6 +4,7 @@
  * - 左面板是结构与变量，右边的检查器只显示选中的东西，都从模板文档与 Schema 生成（template/properties.ts）；
  * - 每次改动写回工作副本，再重渲染、刷新问题清单（template/session.ts）；撤销与重做只在这一页里；"保存"是立刻暂存，改了没点保存就离开要提醒（M383），"发布修订"去下一页；
  * - 预览接口只出草稿，两种模式的问题清单相同（docs/render-modes.md），所以样例带上常驻一句正式出图的结论，不设切换。
+ * - 舞台底部的工具栏：选择、平移，插入（design/insert-bar.tsx，第三轮票据 06），缩放，叠加层，面板；
  * "让 Agent 修改""留评论"在 P2、P4 接入前不显示。
  */
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
@@ -15,8 +16,9 @@ import { DesignInspector, InlineTextEditor } from '../design/panels.js';
 import { callersOf, deleteElement, dropTarget, duplicateElement, moveElement, moveElementTo, renameElement, unwrapContainer, wrapInContainer, type DropZone, type Edited } from '../template/structure.js';
 import { usesOfVariable, useInspection, VariablesPanel, type VariableSelection } from '../design/variables.js';
 import { DesignStructure, type TreeSource } from '../design/structure.js';
-import { AddPanel, canDropInto, currentAdd, isAddDrag } from '../design/add-panel.js';
-import { insertElement, insertionPoint, type Drop } from '../template/create.js';
+import { AddPanel } from '../design/add-panel.js';
+import { canDropInto, currentAdd, InsertBar, isAddDrag, useInsertSources } from '../design/insert-bar.js';
+import { insertElement, insertionLabel, insertionPoint, insertKey, newElement, type Drop, type NewKind } from '../template/create.js';
 import { writeProperty } from '../template/properties.js';
 import { handlesOf, layoutContext, nudge, type ArrowKey, type HandleInput, type HandleResult } from '../template/handles.js';
 import { extractTemplate, type SizeRange } from '../template/extract.js';
@@ -71,6 +73,7 @@ function Design(props: { readonly name: string; readonly root: string }) {
   const documentOf = (template: string) => state.docs.get(template)?.document;
   const called = calledTemplates(root, documentOf).join('\n');
   useEffect(() => { for (const template of called.split('\n')) if (template !== root && template !== name) void session.open(template, { quiet: true }); }, [session, called, root, name]);
+  const sources = useInsertSources(doc?.document);
   const [treeHover, setTreeHover] = useState<TreeSource>();
   const [layers, setLayers] = useState<Layers>(DEFAULT_LAYERS);
 
@@ -245,16 +248,13 @@ function Design(props: { readonly name: string; readonly root: string }) {
     setLeftTab('structure');
     setRenaming({ template: target.template, path: target.path });
   };
-  // —— 添加元素（票据 14）：点一下加到选中的位置；拖到结构树或图上放在那里。 ——
-  const addTargetLabel = (document: JsonObject) => {
-    const point = insertionPoint(document, name, selected?.path), container = point.container === name ? `画板「${name}」` : `「${point.container.split('/').at(-1)!}」`;
-    return selected && selected.path !== name && point.container !== selected.path ? `${container}，放在「${selected.path.split('/').at(-1)!}」后面` : `${container}的最后`;
-  };
+  // —— 添加元素（票据 14；第三轮票据 06 起从底部工具栏）：点一下、按 T 或 F 加到选中的位置，都走这一个函数；拖到结构树或图上放在那里。 ——
   const addElement = (element: JsonObject) => {
     if (!doc) return;
     const point = insertionPoint(doc.document, name, selected?.path);
     if (!applyStructure(name, insertElement(doc.document, name, point.container, element, { index: point.index }), 'add')) setNotice('这里放不进元素。');
   };
+  const addKind = (kind: NewKind) => { if (doc) addElement(newElement(kind, doc.document, sources.bindings)); };
   const bindVisible = (variable: string) => {
     if (!doc || !selected || selected.path === name) { setNotice('先选中一个元素，再把布尔字段绑到它的显示。'); return; }
     session.edit(name, writeProperty(doc.document, selected.path, ['visible'], { var: variable }), `structure:visible:${Date.now()}`);
@@ -365,10 +365,10 @@ function Design(props: { readonly name: string; readonly root: string }) {
   const zoomBy = (factor: number) => setView((now) => ({ ...now, zoom: Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, now.zoom * factor)) }));
   const fitView = () => setView(FIT_VIEW);
 
-  // 快捷键：Ctrl+S、Ctrl+Z、Ctrl+Y、Ctrl+0、Ctrl+1、Ctrl+\\；V、H 切工具，打字时不算。
-  const keys = useRef({ undo, redo, save, fitView, climb, descend, structure, startRename, nudge: nudgeSelected, physical: () => {}, togglePanels: () => {} });
+  // 快捷键：Ctrl+S、Ctrl+Z、Ctrl+Y、Ctrl+0、Ctrl+1、Ctrl+\\；V、H 切工具，T 加文字、F 加容器，打字时不算。
+  const keys = useRef({ undo, redo, save, fitView, climb, descend, structure, startRename, nudge: nudgeSelected, add: addKind, physical: () => {}, togglePanels: () => {} });
   keys.current = {
-    undo, redo, save, fitView, climb, descend, structure, startRename, nudge: nudgeSelected,
+    undo, redo, save, fitView, climb, descend, structure, startRename, nudge: nudgeSelected, add: addKind,
     physical: () => setView({ zoom: ((outputWidth / 25.4) * PHYSICAL_DPI) / fit, x: 0, y: 0 }),
     togglePanels: () => setPanels((now) => { const open = !(now.left || now.right); return { left: open, right: open }; }),
   };
@@ -395,6 +395,8 @@ function Design(props: { readonly name: string; readonly root: string }) {
       if (event.key.startsWith('Arrow') && (target === document.body || target?.closest('[data-testid="design-stage"]'))) { event.preventDefault(); keys.current.nudge(event.key as ArrowKey, event.shiftKey); return; }
       if (event.key === 'Delete') { event.preventDefault(); keys.current.structure('delete'); return; }
       if (event.key === 'F2') { event.preventDefault(); keys.current.startRename(); return; }
+      const kind = event.shiftKey ? undefined : insertKey(event.key);
+      if (kind) { keys.current.add(kind); return; }
       if (key === 'v') setTool('select');
       if (key === 'h') setTool('pan');
       if (key === 'escape') keys.current.climb();
@@ -428,7 +430,7 @@ function Design(props: { readonly name: string; readonly root: string }) {
   const blankBoard = board && !(Array.isArray(board['children']) && board['children'].length > 0);
   const stageHint = blankBoard ? (
     <>
-      <span>空画板。下一步：从左边的"添加"页加元素，或把字段拖到图上。</span>
+      <span>空画板。下一步：从底部工具栏加元素，或从"添加"页把字段拖到图上。</span>
       <button type="button" className="small" onClick={() => { setPanels((now) => ({ ...now, left: true })); setLeftTab('add'); }}>打开"添加"页</button>
     </>
   ) : undefined;
@@ -481,7 +483,7 @@ function Design(props: { readonly name: string; readonly root: string }) {
                   {...(renaming ? { renaming } : {})} onRename={rename} onRenameDone={() => setRenaming(undefined)} onDrop={dropOnTree} onAddDrop={addOnTree} />
                 : leftTab === 'variables'
                   ? <VariablesPanel doc={doc} session={session} {...(inspection ? { inspection } : {})} {...(variable ? { selected: variable } : {})} onSelect={openVariable} onHover={setHoverVariable} />
-                  : <AddPanel template={name} document={doc.document} targetLabel={addTargetLabel(doc.document)} {...(selected && selected.path !== name ? { selectionLabel: selected.path.split('/').at(-1)! } : {})} onAdd={addElement} onBindVisible={bindVisible} />) : <Loading>正在读取模板…</Loading>}
+                  : <AddPanel template={name} document={doc.document} sources={sources} targetLabel={insertionLabel(doc.document, name, selected?.path)} {...(selected && selected.path !== name ? { selectionLabel: selected.path.split('/').at(-1)! } : {})} onAdd={addElement} onBindVisible={bindVisible} />) : <Loading>正在读取模板…</Loading>}
             </div>
           </aside>
         )}
@@ -498,6 +500,8 @@ function Design(props: { readonly name: string; readonly root: string }) {
             <button type="button" aria-label="平移" title="平移 H，或按住空格" aria-pressed={tool === 'pan'} onClick={() => setTool('pan')} aria-keyshortcuts="H"><Icon d={HAND} /></button>
           </span>
           <span className="dock-sep" aria-hidden="true" />
+          {doc && <InsertBar key={name} template={name} document={doc.document} sources={sources} targetLabel={insertionLabel(doc.document, name, selected?.path)} onAdd={addElement} />}
+          {doc && <span className="dock-sep" aria-hidden="true" />}
           <span className="dock-group" role="group" aria-label="缩放">
             <button type="button" aria-label="缩小" disabled={view.zoom <= MIN_ZOOM} onClick={() => zoomBy(1 / 1.25)}>−</button>
             <button type="button" className="dock-zoom" data-testid="zoom-level" title="恢复适应窗口 Ctrl+0" onClick={fitView}>{Math.round(view.zoom * 100)}%</button>
