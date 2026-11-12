@@ -1,14 +1,13 @@
 /**
- * 登录（M247、M361）：成员用邮箱加密码登录，会话 12 小时；只有客户管理员与操作员能用控制台。
- * 版式照原型：左上品牌，表单直接放在页面上，右边大幅视频，不放说明文字。
- * 视频没有声音、不放控件；减少动态时只放封面，窄窗口不放（也就不下载）。
+ * 登录（M247、M398）：成员用邮箱加密码登录，会话 12 小时；只有客户管理员与操作员能用控制台。
+ * 版式：左上品牌，表单直接放在页面上，右边一幅织面，不放说明文字。
+ * 织面是页面里自己画的 SVG；减少动态时停在织完的样子，窄窗口不放。
  */
 import { useState, useSyncExternalStore, type FormEvent } from 'react';
 import { api, session } from '../api.js';
-import studioPoster from '../assets/login-studio.jpg';
-import studioVideo from '../assets/login-studio.mp4';
 import { Logo } from '../components/logo.js';
 import { ErrorBox } from '../components/problems.js';
+import { Weave } from '../components/weave.js';
 import { problemsOf } from '../hooks.js';
 import type { Identity, Problem } from '../types.js';
 
@@ -35,6 +34,7 @@ export function LoginPage(props: { readonly notice?: string; readonly onLogin: (
     <main className="login">
       <h1 className="brand login-brand"><Logo size={28} />RenderWeave</h1>
       <form className="login-card" onSubmit={(event) => void submit(event)} aria-label="登录">
+        <h2 className="login-title">登录控制台</h2>
         {props.notice && <p className="notice" role="status">{props.notice}</p>}
         <input type="email" aria-label="邮箱" placeholder="输入邮箱" autoComplete="username" required value={email} onChange={(event) => setEmail(event.target.value)} />
         <div className="password-field">
@@ -46,7 +46,7 @@ export function LoginPage(props: { readonly notice?: string; readonly onLogin: (
           {busy ? '正在登录…' : <>登录<svg className="login-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></>}
         </button>
       </form>
-      <StudioVideo />
+      <WeaveArt />
     </main>
   );
 }
@@ -57,13 +57,9 @@ const useMedia = (query: string) => useSyncExternalStore((changed) => {
   return () => list.removeEventListener('change', changed);
 }, () => window.matchMedia(query).matches);
 
-/** 右边的视频：控制台的配色就取自它（M361）。 */
-function StudioVideo() {
-  const wide = useMedia('(min-width: 861px)'), still = useMedia('(prefers-reduced-motion: reduce)');
+/** 右边的织面：窄窗口不放。 */
+function WeaveArt() {
+  const wide = useMedia('(min-width: 861px)');
   if (!wide) return null;
-  return (
-    <div className="login-art" aria-hidden="true">
-      {still ? <img src={studioPoster} alt="" /> : <video src={studioVideo} poster={studioPoster} autoPlay muted loop playsInline disablePictureInPicture />}
-    </div>
-  );
+  return <div className="login-art" aria-hidden="true"><Weave /></div>;
 }

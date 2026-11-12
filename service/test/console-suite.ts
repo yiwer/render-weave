@@ -909,7 +909,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       }
     }, 120_000);
 
-    it('新框架（P1 票据 01）：窄窗口下模块占满宽度、没有横向滚动；正文与背景对比度不低于 4.5，铅笔赭不承载文字', async () => {
+    it('新框架（P1 票据 01）：窄窗口下模块占满宽度、没有横向滚动；正文与背景对比度不低于 4.5，纬线橙不承载文字', async () => {
       const luminance = (rgb: string) => {
         const [r, g, b] = rgb.match(/\d+/g)!.slice(0, 3).map((value) => {
           const c = Number(value) / 255;
@@ -921,11 +921,11 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
         const [high, low] = [luminance(a), luminance(b)].sort((x, y) => y - x);
         return (high! + 0.05) / (low! + 0.05);
       };
-      // 正文与页面底的颜色、带字的元素里用调和橙的、页面比窗口宽出来的像素。
+      // 正文与页面底的颜色、带字的元素里用纬线橙的、页面比窗口宽出来的像素。
       const look = () => page.evaluate(`(() => {
         const body = getComputedStyle(document.body);
         const orange = [...document.querySelectorAll('body *')].filter((element) => element.childElementCount === 0 && element.textContent.trim()
-          && getComputedStyle(element).color === 'rgb(179, 128, 71)').map((element) => element.textContent.trim());
+          && getComputedStyle(element).color === 'rgb(255, 138, 0)').map((element) => element.textContent.trim());
         return { color: body.color, background: body.backgroundColor, orange, overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth };
       })()`) as Promise<{ color: string; background: string; orange: string[]; overflow: number }>;
       const pages: [string, () => Promise<unknown>][] = [
@@ -952,7 +952,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
             const seen = await look();
             expect(seen.overflow, `${width} ${link}`).toBe(0);
             expect(seen.orange, `${width} ${link}`).toEqual([]);
-            expect([seen.color, seen.background], link).toEqual(['rgb(29, 38, 46)', 'rgb(247, 244, 236)']);
+            expect([seen.color, seen.background], link).toEqual(['rgb(16, 18, 22)', 'rgb(243, 244, 246)']);
             expect(contrast(seen.color, seen.background)).toBeGreaterThanOrEqual(4.5);
             expect((await page.getByRole('main').boundingBox())!.width, `${width} ${link}`).toBe(width);
           }
@@ -1640,8 +1640,8 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(shown.arrow).toContain('svg');
       expect(shown.appearance).toBe(shown.supported ? 'base-select' : 'none');
       if (shown.supported) {
-        expect(shown.picker).toBe('rgb(253, 252, 248)');
-        expect(shown.options[0]).toEqual(['updated', '34px', 'rgb(238, 230, 216)', '600']);
+        expect(shown.picker).toBe('rgb(255, 255, 255)');
+        expect(shown.options[0]).toEqual(['updated', '34px', 'rgb(233, 236, 254)', '600']);
         expect(shown.options[1]).toEqual(['oldest', '34px', 'rgba(0, 0, 0, 0)', '400']);
       }
       await sort.selectOption('name');
@@ -1681,7 +1681,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(await target.getByTestId('usage-beam').getAttribute('data-tilt')).toBe(String(Math.round((Math.min((images.used + images.reserved) / Math.max(images.limit, 1), 1) - .5) * 24)));
     });
 
-    it('登录页（P1 票据 15）：右边是没有声音、没有控件的视频，不放说明文字；减少动态时只放封面，窄窗口不放；密码可以显示', async () => {
+    it('登录页（M398）：右边是页面里自己画的织面，不下载图片或视频，不放说明文字；减少动态时停在织完的样子，窄窗口不放；密码可以显示', async () => {
       const open = async (options: { viewport?: { width: number; height: number }; reducedMotion?: 'reduce' }) => {
         const opened = await browser.newContext({ viewport: options.viewport ?? { width: 1440, height: 900 }, locale: 'zh-CN', ...(options.reducedMotion ? { reducedMotion: options.reducedMotion } : {}) });
         const tab = await opened.newPage();
@@ -1689,14 +1689,17 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
         await tab.getByRole('button', { name: '登录' }).waitFor();
         return { opened, tab };
       };
+      // 织面：纬线的行数、行上的动效与不透明度、画面里有没有图片或视频。
+      const weave = (tab: Page) => tab.evaluate(`(() => {
+        const art = document.querySelector('.login-art'), rows = [...art.querySelectorAll('.weave-row')], last = getComputedStyle(rows.at(-1));
+        return { hidden: art.getAttribute('aria-hidden'), rows: rows.length, floats: art.querySelectorAll('.weave-row rect').length, animation: last.animationName, opacity: last.opacity, media: art.querySelectorAll('video, img').length };
+      })()`) as Promise<{ hidden: string; rows: number; floats: number; animation: string; opacity: string; media: number }>;
       const { opened, tab } = await open({});
       try {
-        const video = await tab.evaluate(`(() => { const v = document.querySelector('.login-art video'); return { muted: v.muted, autoplay: v.autoplay, loop: v.loop, controls: v.controls, src: v.getAttribute('src'), poster: v.getAttribute('poster') }; })()`) as { muted: boolean; autoplay: boolean; loop: boolean; controls: boolean; src: string; poster: string };
-        expect(video).toMatchObject({ muted: true, autoplay: true, loop: true, controls: false });
-        const whole = await tab.request.get(`${baseUrl}${video.src}`), part = await tab.request.get(`${baseUrl}${video.src}`, { headers: { range: 'bytes=0-99' } });
-        expect([whole.status(), whole.headers()['content-type']]).toEqual([200, 'video/mp4']);
-        expect([part.status(), (await part.body()).length]).toEqual([206, 100]);
-        expect((await tab.request.get(`${baseUrl}${video.poster}`)).headers()['content-type']).toBe('image/jpeg');
+        await tab.getByRole('heading', { name: '登录控制台' }).waitFor();
+        const moving = await weave(tab);
+        expect(moving).toMatchObject({ hidden: 'true', rows: 32, animation: 'rw-weave', media: 0 });
+        expect(moving.floats).toBeGreaterThan(100);
         expect(await tab.getByText('账号由平台管理员开通').count() + await tab.getByText('出图控制台：').count()).toBe(0);
         const password = tab.getByLabel('密码');
         await password.fill('看得见');
@@ -1707,7 +1710,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
         await opened.close();
       }
       const still = await open({ reducedMotion: 'reduce' });
-      expect([await still.tab.locator('.login-art video').count(), await still.tab.locator('.login-art img').count()]).toEqual([0, 1]);
+      expect(await weave(still.tab)).toMatchObject({ rows: 32, animation: 'none', opacity: '1', media: 0 });
       await still.opened.close();
       const narrow = await open({ viewport: { width: 375, height: 800 } });
       expect(await narrow.tab.locator('.login-art').count()).toBe(0);
