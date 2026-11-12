@@ -120,6 +120,26 @@ npx tsx scripts/agent-eval/run.ts --label <名称> --model gemini-4-argon-contri
   - Docker 后端测试 `node service/scripts/test-docker.mjs` 由 Compose 构建镜像，代理也作为构建参数注入，`unset` 用不上。做法是不改用户的 `~/.docker/config.json`：复制一份去掉 `proxies` 的副本，连同 `contexts`、`buildx`、`cli-plugins` 目录放进一个临时目录，只对这一次运行设 `DOCKER_CONFIG` 指向它（票据 14）。
   - 直连时 Alpine 源可能很慢：没有构建缓存的话，tester 镜像装 Chromium 那一步可能要几个小时（票据 14 实测约 4.6 小时）。这时设 `RW_ALPINE_MIRROR=https://mirrors.aliyun.com` 再跑，tester 镜像从这个镜像源装 Chromium（票据 15 实测索引 9 秒，直连 86 秒）。Chromium 与测试字体在不依赖源码的一层里，装好一次之后改源码重建 tester 不再重装。
 
+- **锁文件里的华为云镜像连不上**：根目录 `package-lock.json` 有 159 个包的 `resolved` 写的是 `mirrors.huaweicloud.com`（`service/package-lock.json` 全是 npmjs）。有的网络连这个主机时 TLS 握手就断（2026-11-11 实测 curl 三次都返回 000，npmjs 正常），本机 `npm ci` 报 `ECONNRESET`；`up.mjs` 构建镜像时坏在 runtime 阶段的 `npm ci --omit=dev`，重试三次后报"Exit handler never called!"，与上一条代理注入的报错相同。分辨方法：`npm ci --loglevel=verbose` 看失败的是哪个主机，`docker info` 看有没有注入代理。
+  - 不改锁文件：渲染器构建标识（`src/renderer-build.ts`）与评估的实验身份都算锁文件的字节。同一服务的另一个域名 `repo.huaweicloud.com` 路径相同、连得上，让 npm 只把这一个主机换掉，包的 integrity 不变。npm 用 registry 的 origin 拼原路径，所以 registry 只写到主机；这个地址不是 registry 根，所以关掉 audit。
+  - 本机（Git Bash；PowerShell 里改成先设 `$env:npm_config_*` 再 `npm ci`）：
+
+    ```bash
+    npm_config_registry=https://repo.huaweicloud.com/ npm_config_replace_registry_host=mirrors.huaweicloud.com npm_config_audit=false npm ci
+    ```
+
+  - Docker：在仓库外生成一份临时 Dockerfile，每个 `FROM node:22-alpine` 后面加同样的 `ENV`，再用 Compose 覆盖文件指给 `setup` 服务（`api`、`worker` 用它构建的同一个镜像）。之后只重启不重建时直接 `docker compose up -d`，不用带覆盖文件。Windows 的 Git Bash 里：
+
+    ```bash
+    T=$(cygpath -m "$(mktemp -d)")
+    sed '/^FROM node:22-alpine/a ENV npm_config_registry=https://repo.huaweicloud.com/ npm_config_replace_registry_host=mirrors.huaweicloud.com npm_config_audit=false npm_config_fund=false' service/Dockerfile > "$T/Dockerfile"
+    printf 'services:\n  setup:\n    build:\n      dockerfile: %s/Dockerfile\n' "$T" > "$T/compose.npm-host.yaml"
+    COMPOSE_FILE="compose.yaml;$T/compose.npm-host.yaml" node service/scripts/up.mjs
+    ```
+
+    Linux 与 macOS 上去掉 `cygpath -m`，`COMPOSE_FILE` 的分隔符换成 `:`。`test-docker.mjs` 构建 tester 时也照这样带上覆盖文件（另给 `tester` 服务写同样的 `dockerfile`）。
+  - 锁文件改回 npmjs 之后删掉这一条；改锁文件会换构建标识与评估身份，要和下一次评估一起做。
+
 - **命令行提交审核操作**：Windows 的 Git Bash 里用 `curl` 发中文，会按本机代码页发出，审核服务按 UTF-8 严格解码，返回 400。审核请在浏览器里操作；确实要用脚本时，用 Node 的 `fetch` 发 UTF-8 JSON。
 - **正式出图要资源版本仓库**：`fixtures/resources` 只能用于发起任务与审核预览。`deliver` 前先 `resources-init`，再 `resources-import`，见[代建指南](agent-guide.md)第 7 步。
 - **模板辅助修改要有数据集**：模板设计用的出图请求没写数据集时，修改轮要加 `--dataset`。
