@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>出图控制台 · 整体改版原型</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!-- 原型：只作讨论，不作实现基础。按 1440×900 看；说明见 README.md。 -->
+<div class="app">
+  <nav class="rail" id="rail" aria-label="模块"></nav>
+  <div class="main">
+    <header class="top" id="top"></header>
+    <div class="page" id="view"></div>
+  </div>
+</div>
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer"></aside>
+<div class="palette" id="palette" role="dialog" aria-label="搜索与跳转"></div>
+<div class="keys" id="keys"></div>
+<div class="toast" id="toast" role="status"></div>
+<nav class="scenes" id="scenes" aria-label="原型场景"></nav>
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script src="pages.js"></script>
+<script>boot();</script>
+</body>
+</html>
